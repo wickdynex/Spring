@@ -5,7 +5,11 @@ import com.spring.ApplicationContext;
 public class Test {
 
     public static void main(String[] args) {
-        ApplicationContext context = new ApplicationContext(ApplicationConfig.class);
+        ApplicationContext applicationContext = new ApplicationContext(ApplicationConfig.class);
 
+        Object userService = applicationContext.getBean("userService");
+        System.out.println(userService);
+        System.out.println(userService);
+        System.out.println(userService);
     }
 }
