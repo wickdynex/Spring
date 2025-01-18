@@ -1,6 +1,7 @@
 package com.spring;
 
 import java.io.File;
+import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.net.URL;
 import java.util.concurrent.ConcurrentHashMap;
@@ -30,7 +31,16 @@ public class ApplicationContext {
     public Object createBean(BeanDefinition beanDefinition) {
         Class<?> beanClass = beanDefinition.getBeanClass();
         try {
+
             Object instance = beanClass.getDeclaredConstructor().newInstance();
+            for (Field declaredField : beanClass.getDeclaredFields()) {
+                if(declaredField.isAnnotationPresent(Autowired.class)) {
+                    Object bean = getBean(declaredField.getName());
+                    declaredField.setAccessible(true);
+                    declaredField.set(instance, bean);
+                }
+            }
+
             return instance;
         } catch (InstantiationException e) {
             throw new RuntimeException(e);
