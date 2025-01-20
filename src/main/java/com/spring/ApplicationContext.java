@@ -4,6 +4,8 @@ import java.io.File;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.net.URL;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class ApplicationContext {
@@ -12,6 +14,8 @@ public class ApplicationContext {
     private ConcurrentHashMap<String, Object> singletonsObjects = new ConcurrentHashMap<>();
 
     private ConcurrentHashMap<String, BeanDefinition> beanDefinitionMap = new ConcurrentHashMap<>();
+
+    private List<BeanPostProcesser> beanPostProcesserList = new ArrayList<>();
 
     public ApplicationContext(Class configClass) {
         this.configClass = configClass;
@@ -55,6 +59,16 @@ public class ApplicationContext {
                 }
             }
 
+            // BeanPostBeforeProcesser
+            for (BeanPostProcesser beanPostProcesser : beanPostProcesserList) {
+                instance = beanPostProcesser.postProcessBeforeInitialization(instance, beanName);
+            }
+
+            // BeanPostAfterProcesser
+            for (BeanPostProcesser beanPostProcesser : beanPostProcesserList) {
+                instance = beanPostProcesser.postProcessAfterInitialization(instance, beanName);
+            }
+
             return instance;
         } catch (InstantiationException e) {
             throw new RuntimeException(e);
@@ -88,6 +102,21 @@ public class ApplicationContext {
                         try {
                             Class<?> clazz = classLoader.loadClass(classPath);
                             if (clazz.isAnnotationPresent(Component.class)) {
+
+                                if (BeanPostProcesser.class.isAssignableFrom(clazz)) {
+                                    try {
+                                        BeanPostProcesser beanPostProcesser = (BeanPostProcesser) clazz.getConstructor().newInstance();
+                                        beanPostProcesserList.add(beanPostProcesser);
+                                    } catch (InstantiationException e) {
+                                        throw new RuntimeException(e);
+                                    } catch (IllegalAccessException e) {
+                                        throw new RuntimeException(e);
+                                    } catch (InvocationTargetException e) {
+                                        throw new RuntimeException(e);
+                                    } catch (NoSuchMethodException e) {
+                                        throw new RuntimeException(e);
+                                    }
+                                }
                                 // set bean name to beanDefinationMap
                                 Component componentAnnotation = clazz.getAnnotation(Component.class);
                                 // set beanName
@@ -96,7 +125,6 @@ public class ApplicationContext {
                                     beanName = clazz.getSimpleName();
                                     beanName = beanName.substring(0, 1).toLowerCase() + beanName.substring(1);
                                 }
-//                                System.out.println(beanName);
 
                                 BeanDefinition beanDefinition = new BeanDefinition();
                                 beanDefinition.setBeanClass(clazz);
