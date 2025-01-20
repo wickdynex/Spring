@@ -2,6 +2,7 @@ package com.spring.test.ioc;
 
 import com.spring.beans.factory.config.BeanDefinition;
 import com.spring.beans.factory.support.DefaultListableBeanFactory;
+import com.spring.test.ioc.service.HelloService;
 import org.junit.Test;
 
 public class BeanDefinitionAndBeanDefinitionRegistryTest {
