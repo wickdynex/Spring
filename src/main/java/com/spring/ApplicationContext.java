@@ -19,7 +19,7 @@ public class ApplicationContext {
         for(String beanName : beanDefinitionMap.keySet()) {
             BeanDefinition beanDefinition = beanDefinitionMap.get(beanName);
             if(beanDefinition.getBeanScope().equals(BeanScope.singleton.getScope())) {
-                Object bean = createBean(beanDefinition);
+                Object bean = createBean(beanName, beanDefinition);
                 singletonsObjects.put(beanName, bean);
             }
             else {
@@ -28,16 +28,29 @@ public class ApplicationContext {
         }
     }
 
-    public Object createBean(BeanDefinition beanDefinition) {
+    public Object createBean(String beanName, BeanDefinition beanDefinition) {
         Class<?> beanClass = beanDefinition.getBeanClass();
         try {
 
+            // IoC
             Object instance = beanClass.getDeclaredConstructor().newInstance();
             for (Field declaredField : beanClass.getDeclaredFields()) {
                 if(declaredField.isAnnotationPresent(Autowired.class)) {
                     Object bean = getBean(declaredField.getName());
                     declaredField.setAccessible(true);
                     declaredField.set(instance, bean);
+                }
+            }
+
+            if (instance instanceof BeanNameAware) {
+                ((BeanNameAware) instance).setBeanName(beanName);
+            }
+
+            if(instance instanceof InitializingBean) {
+                try {
+                    ((InitializingBean) instance).afterPropertiesSet();
+                } catch (Exception e) {
+                    throw new RuntimeException(e);
                 }
             }
 
@@ -76,6 +89,7 @@ public class ApplicationContext {
                             if (clazz.isAnnotationPresent(Component.class)) {
                                 // set bean name to beanDefinationMap
                                 Component componentAnnotation = clazz.getAnnotation(Component.class);
+                                // set beanName
                                 String beanName = componentAnnotation.value();
                                 if (beanName.isEmpty()) {
                                     beanName = clazz.getSimpleName();
@@ -112,7 +126,7 @@ public class ApplicationContext {
             }
             else {
                 // create a new bean
-                object = createBean(beanDefinition);
+                object = createBean(beanName, beanDefinition);
             }
             return object;
         }
