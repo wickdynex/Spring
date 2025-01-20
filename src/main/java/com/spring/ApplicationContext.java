@@ -16,13 +16,12 @@ public class ApplicationContext {
     public ApplicationContext(Class configClass) {
         this.configClass = configClass;
         scan(configClass);
-        for(String beanName : beanDefinitionMap.keySet()) {
+        for (String beanName : beanDefinitionMap.keySet()) {
             BeanDefinition beanDefinition = beanDefinitionMap.get(beanName);
-            if(beanDefinition.getBeanScope().equals(BeanScope.singleton.getScope())) {
+            if (beanDefinition.getBeanScope().equals(BeanScope.singleton.getScope())) {
                 Object bean = createBean(beanName, beanDefinition);
                 singletonsObjects.put(beanName, bean);
-            }
-            else {
+            } else {
 
             }
         }
@@ -35,18 +34,20 @@ public class ApplicationContext {
             // IoC
             Object instance = beanClass.getDeclaredConstructor().newInstance();
             for (Field declaredField : beanClass.getDeclaredFields()) {
-                if(declaredField.isAnnotationPresent(Autowired.class)) {
+                if (declaredField.isAnnotationPresent(Autowired.class)) {
                     Object bean = getBean(declaredField.getName());
                     declaredField.setAccessible(true);
                     declaredField.set(instance, bean);
                 }
             }
 
+            // BeanNameAware
             if (instance instanceof BeanNameAware) {
                 ((BeanNameAware) instance).setBeanName(beanName);
             }
 
-            if(instance instanceof InitializingBean) {
+            // AfterPropertiesSet
+            if (instance instanceof InitializingBean) {
                 try {
                     ((InitializingBean) instance).afterPropertiesSet();
                 } catch (Exception e) {
@@ -121,16 +122,14 @@ public class ApplicationContext {
             BeanDefinition beanDefinition = beanDefinitionMap.get(beanName);
             String beanScope = beanDefinition.getBeanScope();
             Object object;
-            if(beanScope.equals(BeanScope.singleton.getScope())){
-                 object = singletonsObjects.get(beanName);
-            }
-            else {
+            if (beanScope.equals(BeanScope.singleton.getScope())) {
+                object = singletonsObjects.get(beanName);
+            } else {
                 // create a new bean
                 object = createBean(beanName, beanDefinition);
             }
             return object;
-        }
-        else {
+        } else {
             throw new NullPointerException("Bean not found: " + beanName);
         }
     }
